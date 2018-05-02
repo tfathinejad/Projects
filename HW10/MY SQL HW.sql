@@ -55,10 +55,10 @@ select last_name, count(*) from actor
 group by last_name;
 
 -- 4b. List last names of actors and the number of actors who have that last name, but only for names that are shared by at least two actors
--- alter table actor
--- add column first_name_count integer
--- insert into first_name_count SELECT first_name, count(*) from actor
--- group by first_name;
+alter table actor
+add column first_name_count integer
+insert into first_name_count SELECT first_name, count(*) from actor
+group by first_name;
 
 
 -- 4c. Oh, no! The actor HARPO WILLIAMS was accidentally entered in the actor table as GROUCHO WILLIAMS, the name of Harpo's second cousin's husband's yoga teacher. Write a query to fix the record.
@@ -113,7 +113,7 @@ from film_actor
 inner join film on
 film.film_id = film_actor.film_id
 group by film.title
-order by 'Number of Actors' desc;
+order by `Number of Actors` asc;
 
 -- 6d. How many copies of the film Hunchback Impossible exist in the inventory system?
 select count(inventory_id) as 'Number of Copies'
@@ -125,17 +125,22 @@ where title = 'Hunchback Impossible';
 -- 6e. Using the tables payment and customer and the JOIN command, list the total paid by each customer. List the customers alphabetically by last name:
 -- ![Total amount paid](Images/total_payment.png)
 -- 
--- SELECT customer_id, sum(amount), first_name, last_name
--- FROM customer
--- INNER JOIN payment USING (customer_id)
--- GROUP BY customer_id
--- ORDER BY last_name;
+select customer_id, sum(amount), first_name, last_name
+from customer
+inner join payment using (customer_id)
+group by customer_id
+order by last_name;
 
--- 7a. The music of Queen and Kris Kristofferson have seen an unlikely resurgence. As an unintended consequence, films starting with the letters K and Q have also soared in popularity. Use subqueries to display the titles of movies starting with the letters K and Q whose language is English.
--- SELECT film.title
--- FROM film
--- WHERE film.title like 'K%'
--- or film.
+-- 7a. The music of Queen and Kris Kristofferson have seen an unlikely resurgence. 
+-- As an unintended consequence, films starting with the letters K and Q have also soared in popularity. 
+-- Use subqueries to display the titles of movies starting with the letters K and Q whose language is English.
+select film.title
+from film
+where film.title like 'K%'
+or film.title like 'Q%'
+and language_id in
+(select language_id from language
+where language.name = 'English');
 
 -- 7b. Use subqueries to display all actors who appear in the film Alone Trip.
 select actor.first_name, actor.last_name
@@ -150,6 +155,90 @@ where film.title = 'Alone Trip'));
 
 -- 7c. You want to run an email marketing campaign in Canada, for which you will need the names and email addresses of all Canadian customers. Use joins to retrieve this information.
 
-
+select customer.first_name, customer.last_name, customer.email
+from customer
+join address on
+address.address_id = customer.address_id
+join city on
+city.city_id = address.city_id
+join country on
+country.country_id = city.country_id
+where country = 'Canada';
 
 -- 7d. Sales have been lagging among young families, and you wish to target all family movies for a promotion. Identify all movies categorized as famiy films. 
+
+select film.title
+from film
+join film_category on
+film.film_id = film_category.film_id
+join category on
+film_category.category_id = category.category_id
+where category.name = 'Family';
+
+-- 7e. Display the most frequently rented movies in descending order.
+describe film;
+describe rental;
+describe inventory;
+
+SELECT title, (COUNT(rental.rental_id)) AS 'Times Rented'
+from rental
+join inventory on 
+inventory.inventory_id = rental.inventory_id
+join film on
+inventory.film_id = film.film_id
+group by title
+order by COUNT(rental.rental_id) desc;
+-- instead of COUNT(rental.rental_id), you can use `Times Rented` and it will work similarly!
+
+-- 7f. Write a query to display how much business, in dollars, each store brought in.
+-- Haven't figured yet-- connect the above 4 stores , first store to rental then to payment and group by store. then sum up (or use sum function)
+select store.store_id, sum(amount) as Sales from store
+join staff on 
+store.store_id=staff.store_id
+join payment on 
+staff.staff_id=payment.staff_id
+group by store.store_id;
+
+
+-- 7g. Write a query to display for each store its store ID, city, and country.
+select store.store_id, city.city, country.country
+from store
+join address on
+store.address_id = address.address_id
+join city on
+address.city_id = city.city_id
+join country on 
+city.country_id = country.country_id;
+
+-- 7h. List the top five genres in gross revenue in descending order. 
+-- (Hint: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
+
+select category.name, sum(payment.amount) as sales from category
+join film_category on 
+film_category.category_id = category.category_id
+join film on
+film.film_id = film_category.film_id
+join payment on
+payment.rental_id=film.film_id
+group by category.name
+order by sales desc;
+
+-- 8a.In your new role as an executive, you would like to have an easy way of viewing the Top five genres by gross revenue.
+-- Use the solution from the problem above to create a view. 
+-- If you haven't solved 7h, you can substitute another query to create a view.
+create view top_5_genres as
+select category.name, sum(payment.amount) as sales from category
+join film_category on 
+film_category.category_id = category.category_id
+join film on 
+film.film_id = film_category.film_id
+join payment on 
+payment.rental_id=film.film_id
+group by category.name
+order by sales desc;
+
+-- 8b. How would you display the view that you created in 8a?
+select * from top_5_genres;
+
+-- 8c. You find that you no longer need the view top_five_genres. Write a query to delete it
+drop view top_5_genres
