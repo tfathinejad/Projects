@@ -1,0 +1,18 @@
+.form-control {
+  display: inline-block;
+  width: auto;
+  margin-top: 50px;
+}
+
+body {
+	background-color: gray;
+	margin: 5px;
+}
+
+.container {
+	margin-left: 0px;
+}
+
+.form-group {
+	margin-right: 0px;
+}
